@@ -369,13 +369,16 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Setup ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-perfume-app';
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCQQXfKiDO81A5O2vyfGq8E_wwgCwuLniQ",
+  authDomain: "parfumdatase.firebaseapp.com",
+  projectId: "parfumdatase",
+  storageBucket: "parfumdatase.firebasestorage.app",
+  messagingSenderId: "790321557393",
+  appId: "1:790321557393:web:134fa28acedc871f173430",
+  measurementId: "G-S0BW7ZMYWN"
+};
 
         // --- Global State ---
         let userId = null;
