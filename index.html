@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Stok Parfum - Fitur Lanjutan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Library untuk Excel dan CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card-3d {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        .card-3d:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-3d {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        .btn-3d:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        }
+        .btn-3d:active { transform: translateY(1px); }
+        .modal-transition { transition: opacity 0.3s ease-in-out; }
+        .content-transition { transition: transform 0.3s ease-in-out, max-height 0.5s ease-in-out; }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .accordion-content.open {
+            max-height: 2000px;
+        }
+        .radio-label input:checked + .radio-custom {
+            border-color: #a855f7;
+            background-color: #a855f7;
+        }
+        #drop-area {
+            border: 2px dashed #4a5568;
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        #drop-area.highlight {
+            background-color: #2d3748;
+            border-color: #a855f7;
+        }
+        .horizontal-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #4b5563 #1f2937;
+        }
+        .horizontal-scrollbar::-webkit-scrollbar { height: 8px; }
+        .horizontal-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
+        .horizontal-scrollbar::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 10px; border: 2px solid #1f2937; }
+        .vertical-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .vertical-scrollbar::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .vertical-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 10px;
+        }
+        .vertical-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .form-content-wrapper {
+            max-height: 1000px;
+            transition: max-height 0.7s ease-in-out, margin-top 0.7s ease-in-out, opacity 0.5s ease-in-out;
+        }
+        .form-content-wrapper.hidden {
+            max-height: 0;
+            margin-top: 0 !important;
+            opacity: 0;
+            overflow: hidden;
+            padding-top: 0 !important;
+            border-top-width: 0 !important;
+        }
+        #pin-input-field {
+            letter-spacing: 0.5em;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white antialiased h-screen flex flex-col">
+
+    <div class="container mx-auto p-4 md:p-8 flex flex-col flex-grow min-h-0">
+        <header class="relative flex justify-between items-center mb-8 flex-shrink-0">
+            <h1 class="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+                Database Parfum
+            </h1>
+            <div class="flex items-center gap-2">
+                <button id="pin-lock-button" class="p-3 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                     <svg id="lock-icon-svg" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div class="relative">
+                    <button id="menu-button" class="p-3 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                    <div id="dropdown-menu" class="hidden absolute right-0 mt-2 w-64 bg-gray-800 rounded-md shadow-lg z-20 border border-gray-700 p-2 space-y-2">
+                        <a href="#" id="toggle-summary-btn" class="block px-4 py-3 text-base text-white font-semibold bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors">Sembunyikan Ringkasan</a>
+                        <a href="#" id="open-settings-modal" class="block px-4 py-3 text-base text-white font-semibold bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">Pengaturan Harga</a>
+                        <a href="#" id="open-report-modal" class="block px-4 py-3 text-base text-white font-semibold bg-green-600 rounded-lg hover:bg-green-700 transition-colors">Laporan Keuntungan</a>
+                        <hr class="border-gray-600">
+                        <a href="#" id="export-excel-btn" class="block px-4 py-3 text-base text-white font-semibold bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Ekspor ke Excel</a>
+                        <a href="#" id="open-import-modal" class="block px-4 py-3 text-base text-white font-semibold bg-yellow-600 rounded-lg hover:bg-yellow-700 transition-colors">Impor dari CSV</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="space-y-8 flex-grow flex flex-col min-h-0">
+            <!-- Kolom Input Data -->
+            <section id="input-section" class="bg-gray-800 p-6 rounded-xl shadow-2xl card-3d border border-gray-700 flex-shrink-0">
+                <button id="toggle-form-btn" class="w-full flex justify-between items-center text-left">
+                    <h2 id="form-title" class="text-2xl font-semibold">Input Transaksi Baru</h2>
+                    <svg id="form-toggle-icon" class="w-6 h-6 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="form-content-wrapper" class="form-content-wrapper mt-4 border-t-2 border-purple-500 pt-4 hidden">
+                    <form id="perfume-form" class="space-y-4">
+                        <input type="hidden" id="editing-id">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="tanggal" class="block text-sm font-medium text-gray-300 mb-1">Tanggal</label>
+                                <input type="date" id="tanggal" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label for="wangi-parfum" class="block text-sm font-medium text-gray-300 mb-1">Wangi Parfum</label>
+                                <input type="text" id="wangi-parfum" placeholder="Contoh: Baccarat" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Jenis Transaksi</label>
+                                <div id="jenis-transaksi" class="flex gap-4 p-2 bg-gray-700 rounded-lg">
+                                    <label class="radio-label flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="transaction_type" value="masuk" class="sr-only" checked>
+                                        <span class="radio-custom block w-full p-2 rounded-md border-2 border-transparent transition-colors bg-gray-600">Masuk</span>
+                                    </label>
+                                    <label class="radio-label flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="transaction_type" value="keluar" class="sr-only">
+                                        <span class="radio-custom block w-full p-2 rounded-md border-2 border-transparent transition-colors bg-gray-600">Keluar</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="jumlah" class="block text-sm font-medium text-gray-300 mb-1">Jumlah (ml)</label>
+                                <input type="number" id="jumlah" min="1" placeholder="0" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div id="nama-pembeli-container" class="hidden">
+                            <label for="nama-pembeli" class="block text-sm font-medium text-gray-300 mb-1">Nama Pembeli</label>
+                            <input type="text" id="nama-pembeli" placeholder="Nama pelanggan" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                        </div>
+                        <div class="flex gap-4 pt-4">
+                            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-3 px-4 rounded-lg btn-3d">
+                                Simpan Transaksi
+                            </button>
+                            <button type="button" id="cancel-edit-btn" class="hidden w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg btn-3d">
+                                Batal Edit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Kolom Total Stok Keseluruhan -->
+            <section id="stock-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-shrink-0">
+                 <div>
+                    <h3 class="text-md font-semibold text-gray-300 text-center mb-2">Total Parfum Masuk</h3>
+                    <div class="bg-gradient-to-br from-green-500 to-green-700 p-4 rounded-xl shadow-lg card-3d text-center">
+                        <p id="total-masuk" class="text-2xl xl:text-3xl font-bold">0 ml</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-md font-semibold text-gray-300 text-center mb-2">Total Parfum Keluar</h3>
+                    <div class="bg-gradient-to-br from-red-500 to-red-700 p-4 rounded-xl shadow-lg card-3d text-center">
+                        <p id="total-keluar" class="text-2xl xl:text-3xl font-bold">0 ml</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-md font-semibold text-gray-300 text-center mb-2">Total Stok Parfum</h3>
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-xl shadow-lg card-3d text-center">
+                        <p id="stok-terkini" class="text-2xl xl:text-3xl font-bold">0 ml</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Kontainer untuk Kategori Parfum -->
+            <section class="flex-grow flex flex-col min-h-0">
+                <h2 class="text-3xl font-bold my-6 text-center border-b-2 border-gray-700 pb-4 flex-shrink-0">Kategori Stok Parfum</h2>
+                <div class="flex-grow overflow-y-auto vertical-scrollbar pr-2">
+                    <div id="perfume-categories-container" class="space-y-4">
+                        <!-- Kategori akan dirender oleh JavaScript di sini -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-30 modal-transition">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-lg transform scale-95 content-transition">
+            <h3 class="text-xl font-bold text-purple-400 mb-4">Pengaturan Harga</h3>
+            <form id="settings-form" class="space-y-6">
+                <!-- Harga -->
+                <div class="p-4 rounded-lg border border-gray-600">
+                    <h4 class="text-lg font-semibold text-gray-200 mb-2">Ukuran 30 ml</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="harga-beli-30" class="block text-sm font-medium text-gray-400 mb-1">Harga Beli /ml</label>
+                            <input type="number" id="harga-beli-30" placeholder="1666" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label for="harga-jual-30" class="block text-sm font-medium text-gray-400 mb-1">Harga Jual /ml</label>
+                            <input type="number" id="harga-jual-30" placeholder="2666" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 rounded-lg border border-gray-600">
+                    <h4 class="text-lg font-semibold text-gray-200 mb-2">Ukuran 50 ml</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="harga-beli-50" class="block text-sm font-medium text-gray-400 mb-1">Harga Beli /ml</label>
+                            <input type="number" id="harga-beli-50" placeholder="1500" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label for="harga-jual-50" class="block text-sm font-medium text-gray-400 mb-1">Harga Jual /ml</label>
+                            <input type="number" id="harga-jual-50" placeholder="2200" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 rounded-lg border border-gray-600">
+                    <h4 class="text-lg font-semibold text-gray-200 mb-2">Ukuran 100 ml</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="harga-beli-100" class="block text-sm font-medium text-gray-400 mb-1">Harga Beli /ml</label>
+                            <input type="number" id="harga-beli-100" placeholder="1100" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label for="harga-jual-100" class="block text-sm font-medium text-gray-400 mb-1">Harga Jual /ml</label>
+                            <input type="number" id="harga-jual-100" placeholder="2100" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 rounded-lg bg-gray-900/50 border border-dashed border-yellow-500">
+                    <h4 class="text-lg font-semibold text-yellow-400 mb-2">Default untuk Laporan & Lainnya</h4>
+                     <p class="text-xs text-gray-400 mb-3">Harga ini digunakan jika jumlah penjualan bukan 30, 50, atau 100 ml.</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="harga-beli-default" class="block text-sm font-medium text-gray-400 mb-1">Harga Beli Default</label>
+                            <input type="number" id="harga-beli-default" placeholder="1500" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label for="harga-jual-default" class="block text-sm font-medium text-gray-400 mb-1">Harga Jual Default</label>
+                            <input type="number" id="harga-jual-default" placeholder="2200" class="w-full bg-gray-700 border-gray-500 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="close-settings-modal" class="btn-3d bg-gray-600 hover:bg-gray-700 font-semibold py-2 px-6 rounded-lg">Tutup</button>
+                    <button type="submit" class="btn-3d bg-purple-600 hover:bg-purple-700 font-semibold py-2 px-6 rounded-lg">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="report-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-30 modal-transition">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-lg transform scale-95 content-transition">
+            <h3 class="text-xl font-bold text-green-400 mb-4">Laporan Keuntungan</h3>
+            <div class="space-y-4 text-gray-300">
+                <div class="p-3 bg-yellow-900/30 rounded-lg border-l-4 border-yellow-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-yellow-200">Modal Awal</span>
+                        <span id="report-initial-capital" class="font-bold text-lg text-yellow-300">Rp 0</span>
+                    </div>
+                </div>
+                <div class="p-3 bg-gray-700/50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">Keuntungan Perminggu</span>
+                        <span id="report-profit-weekly" class="font-bold text-lg text-green-300">Rp 0</span>
+                    </div>
+                </div>
+                 <div class="p-3 bg-gray-700/50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">Keuntungan Perbulan</span>
+                        <span id="report-profit-monthly" class="font-bold text-lg text-green-300">Rp 0</span>
+                    </div>
+                </div>
+                 <div class="p-4 bg-gray-900/50 rounded-lg border border-green-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg">TOTAL KEUNTUNGAN</span>
+                        <span id="report-profit-total" class="font-bold text-2xl text-green-400">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+             <div class="flex justify-end pt-6">
+                <button type="button" id="close-report-modal" class="btn-3d bg-gray-600 hover:bg-gray-700 font-semibold py-2 px-6 rounded-lg">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="import-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-30 modal-transition">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-lg transform scale-95 content-transition">
+            <h3 class="text-xl font-bold text-yellow-400 mb-4">Impor Data dari CSV</h3>
+            <div class="space-y-4">
+                <a href="#" id="download-template-btn" class="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg btn-3d">Download Template CSV</a>
+                <div id="drop-area" class="p-10 text-center rounded-lg">
+                    <p class="text-gray-400">Seret & Lepaskan File CSV di Sini</p>
+                    <p class="text-gray-500 text-sm my-2">atau</p>
+                    <input type="file" id="file-input" class="hidden" accept=".csv">
+                    <label for="file-input" class="cursor-pointer text-purple-400 hover:text-purple-300 font-semibold">Pilih File</label>
+                </div>
+                <p id="file-name" class="text-center text-gray-500"></p>
+            </div>
+             <div class="flex justify-end gap-4 pt-6">
+                <button type="button" id="close-import-modal" class="btn-3d bg-gray-600 hover:bg-gray-700 font-semibold py-2 px-6 rounded-lg">Tutup</button>
+                <button type="button" id="import-csv-btn" class="btn-3d bg-yellow-600 hover:bg-yellow-700 font-semibold py-2 px-6 rounded-lg" disabled>Impor Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 modal-transition">
+        <form id="pin-form" class="bg-gray-800 rounded-lg shadow-2xl p-8 w-full max-w-xs transform scale-95 content-transition text-center">
+            <h3 id="pin-title" class="text-xl font-bold text-purple-400 mb-4">Masukkan PIN</h3>
+            <input type="password" id="pin-input-field" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="w-full text-center text-3xl tracking-[1em] bg-gray-700 border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none mb-6" placeholder="••••" required>
+            <div class="flex gap-4">
+                 <button type="button" id="pin-cancel-button" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg btn-3d">Batal</button>
+                 <button type="submit" id="pin-submit-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg btn-3d">OK</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 opacity-0 pointer-events-none modal-transition z-50">
+        <div id="notification-content" class="bg-white text-gray-800 p-4 rounded-lg shadow-lg max-w-sm text-center transform -translate-y-20 content-transition">
+            <p id="notification-message"></p>
+        </div>
+    </div>
+    
+    <!-- New Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-40 modal-transition">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md transform scale-95 content-transition">
+            <h3 class="text-xl font-bold text-red-400">Konfirmasi Hapus</h3>
+            <p class="text-gray-300 mt-2 mb-6">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat diurungkan.</p>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-delete-btn" class="btn-3d bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg">Batal</button>
+                <button id="confirm-delete-btn" class="btn-3d bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg">Hapus</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Setup ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-perfume-app';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Global State ---
+        let userId = null;
+        let isAuthReady = false;
+        let unsubscribeFromTransactions = null;
+        let allTransactions = []; // Store all transactions from Firestore
+        let docIdToDelete = null; // Store ID for deletion confirmation
+        let priceSettings = {};
+        let isSummaryVisible = true;
+
+        // --- PIN Security State ---
+        let isPinSet = false;
+        let isPinVerified = false; // Verifies for the current session
+        let protectedAction = null;
+        let pinToConfirm = '';
+        let pinMode = 'verify'; // 'verify', 'set', 'confirm'
+        const PIN_KEY = `perfumeAppPIN_${appId}`;
+        
+        // --- DOM Elements ---
+        const menuButton = document.getElementById('menu-button');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+        const categoriesContainer = document.getElementById('perfume-categories-container');
+        const toggleFormBtn = document.getElementById('toggle-form-btn');
+        const formContentWrapper = document.getElementById('form-content-wrapper');
+        const formToggleIcon = document.getElementById('form-toggle-icon');
+        const toggleSummaryBtn = document.getElementById('toggle-summary-btn');
+        const stockSummarySection = document.getElementById('stock-summary');
+        
+        // --- Modals ---
+        const settingsModal = document.getElementById('settings-modal');
+        const reportModal = document.getElementById('report-modal');
+        const importModal = document.getElementById('import-modal');
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const notificationModal = document.getElementById('notification-modal');
+        const pinModal = document.getElementById('pin-modal');
+        const pinLockButton = document.getElementById('pin-lock-button');
+        const lockIconSvg = document.getElementById('lock-icon-svg');
+        const pinForm = document.getElementById('pin-form');
+        const pinInputField = document.getElementById('pin-input-field');
+        const pinTitle = document.getElementById('pin-title');
+
+        // --- Utility Functions ---
+        const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+
+        function showModal(modal) {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.content-transition').classList.remove('scale-95');
+                if (modal === pinModal) {
+                    pinInputField.focus();
+                }
+            }, 10);
+        }
+
+        function hideModal(modal) {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.content-transition').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+        
+        function showNotification(message, isError = false) {
+            const notificationContent = document.getElementById('notification-content');
+            const notificationMessage = document.getElementById('notification-message');
+            notificationMessage.textContent = message;
+            notificationContent.className = `p-4 rounded-lg shadow-lg max-w-sm text-center transform content-transition ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
+            notificationModal.classList.remove('hidden', 'opacity-0');
+            notificationContent.classList.remove('-translate-y-20');
+            setTimeout(() => {
+                notificationModal.classList.add('opacity-0');
+                notificationContent.classList.add('-translate-y-20');
+                setTimeout(() => notificationModal.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        // --- PIN Security Functions ---
+        function updateLockIcon() {
+            if (isPinVerified) {
+                lockIconSvg.classList.add('text-purple-400');
+            } else {
+                lockIconSvg.classList.remove('text-purple-400');
+            }
+        }
+
+        function checkPinStatus() {
+            if (localStorage.getItem(PIN_KEY)) {
+                isPinSet = true;
+            } else {
+                isPinSet = false;
+            }
+        }
+
+        function resetPinForm() {
+            pinInputField.value = '';
+        }
+        
+        function processPin(pinValue) {
+            if (pinValue.length !== 4) {
+                showNotification("PIN harus 4 digit.", true);
+                return;
+            }
+
+            const storedPin = localStorage.getItem(PIN_KEY);
+            switch (pinMode) {
+                case 'verify':
+                    if (pinValue === storedPin) {
+                        isPinVerified = true;
+                        updateLockIcon();
+                        hideModal(pinModal);
+                        if (protectedAction) {
+                            protectedAction();
+                            protectedAction = null;
+                        }
+                        showNotification("PIN Benar! Sesi tidak terkunci.");
+                    } else {
+                        showNotification("PIN Salah. Coba lagi.", true);
+                    }
+                    resetPinForm();
+                    break;
+                case 'set':
+                    pinToConfirm = pinValue;
+                    pinMode = 'confirm';
+                    pinTitle.textContent = "Konfirmasi PIN Baru";
+                    showNotification("Konfirmasi PIN baru Anda.", false);
+                    resetPinForm();
+                    break;
+                case 'confirm':
+                    if (pinValue === pinToConfirm) {
+                        localStorage.setItem(PIN_KEY, pinValue);
+                        isPinSet = true;
+                        isPinVerified = true;
+                        updateLockIcon();
+                        hideModal(pinModal);
+                        showNotification("PIN berhasil diatur!");
+                        if (protectedAction) {
+                            protectedAction();
+                            protectedAction = null;
+                        }
+                    } else {
+                        showNotification("PIN tidak cocok. Silakan atur ulang.", true);
+                        pinMode = 'set';
+                        pinTitle.textContent = "Atur PIN Baru";
+                        resetPinForm();
+                    }
+                    break;
+            }
+        }
+
+        function requestProtectedAction(action) {
+            if (isPinVerified) {
+                action();
+                return;
+            }
+            
+            protectedAction = action;
+
+            if (!isPinSet) {
+                pinMode = 'set';
+                pinTitle.textContent = "Atur PIN Keamanan";
+                showNotification("Belum ada PIN. Silakan buat PIN 4 digit.", false);
+            } else {
+                pinMode = 'verify';
+                pinTitle.textContent = "Masukkan PIN";
+            }
+            resetPinForm();
+            showModal(pinModal);
+        }
+
+        // --- Authentication & Data Initialization ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                isAuthReady = true;
+                checkPinStatus();
+                await loadPriceSettings();
+                await setupRealtimeListener();
+            } else {
+                 try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Error during sign-in:", error);
+                    showNotification("Gagal terhubung ke server.", true);
+                }
+            }
+        });
+        
+        document.getElementById('tanggal').valueAsDate = new Date();
+
+        function resetForm() {
+            document.getElementById('perfume-form').reset();
+            document.getElementById('tanggal').valueAsDate = new Date();
+            document.getElementById('editing-id').value = '';
+            document.getElementById('form-title').textContent = 'Input Transaksi Baru';
+            document.getElementById('submit-btn').textContent = 'Simpan Transaksi';
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('nama-pembeli-container').classList.add('hidden');
+            document.querySelector('input[name="transaction_type"][value="masuk"]').checked = true;
+        }
+
+        // --- Form Handling ---
+        document.getElementById('perfume-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || !userId) { showNotification("Otentikasi belum siap.", true); return; }
+
+            const wangi = document.getElementById('wangi-parfum').value.trim();
+            const jumlah = parseInt(document.getElementById('jumlah').value) || 0;
+            const tanggal = document.getElementById('tanggal').value;
+            const namaPembeli = document.getElementById('nama-pembeli').value.trim();
+            const editingId = document.getElementById('editing-id').value;
+            const jenis = document.querySelector('input[name="transaction_type"]:checked').value;
+
+            if (!wangi) { showNotification("Nama wangi parfum tidak boleh kosong.", true); return; }
+            if (jumlah <= 0) { showNotification("Jumlah harus lebih dari 0.", true); return; }
+
+            const data = {
+                tanggal, wangi,
+                masuk: jenis === 'masuk' ? jumlah : 0,
+                keluar: jenis === 'keluar' ? jumlah : 0,
+                namaPembeli: jenis === 'keluar' ? namaPembeli : ''
+            };
+
+            try {
+                if (editingId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/perfumeTransactions`, editingId), data);
+                    showNotification("Data berhasil diperbarui!");
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/users/${userId}/perfumeTransactions`), { ...data, createdAt: serverTimestamp() });
+                    showNotification("Data berhasil disimpan!");
+                }
+                resetForm();
+            } catch (error) {
+                console.error("Error writing document: ", error);
+                showNotification("Gagal menyimpan data.", true);
+            }
+        });
+
+        document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
+        
+        document.getElementById('jenis-transaksi').addEventListener('change', (e) => {
+            document.getElementById('nama-pembeli-container').classList.toggle('hidden', e.target.value !== 'keluar');
+        });
+
+        // --- Data Rendering ---
+        const stringToHslColor = (str, s, l) => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return `hsl(${hash % 360}, ${s}%, ${l}%)`;
+        };
+
+        function createTransactionCard(item) {
+            const card = document.createElement('div');
+            const isMasuk = item.masuk > 0;
+            const borderColor = isMasuk ? 'border-green-500' : 'border-red-500';
+            const quantity = isMasuk ? item.masuk : item.keluar;
+            const quantityColor = isMasuk ? 'text-green-400' : 'text-red-400';
+            const typeText = isMasuk ? 'Masuk' : 'Keluar';
+            const typeBg = isMasuk ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300';
+            
+            card.className = `bg-gray-800/50 p-3 rounded-lg border-l-4 ${borderColor} flex flex-col justify-between`;
+            
+            const buyerInfo = !isMasuk && item.namaPembeli ? `
+                <div class="flex items-center gap-2 mt-2 text-xs text-gray-400 border-t border-gray-700 pt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                    <span>${item.namaPembeli}</span>
+                </div>` : '';
+
+            card.innerHTML = `
+                <div class="flex-grow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${typeBg}">${typeText}</span>
+                            <p class="text-xl font-bold ${quantityColor} mt-1">${quantity} <span class="text-base font-normal text-gray-400">ml</span></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="edit-btn p-2 bg-yellow-600/80 hover:bg-yellow-600 rounded-full btn-3d" data-id="${item.id}" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg>
+                            </button>
+                            <button class="delete-btn p-2 bg-red-600/80 hover:bg-red-600 rounded-full btn-3d" data-id="${item.id}" title="Hapus">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">${new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                </div>
+                ${buyerInfo}
+            `;
+            return card;
+        }
+
+        function renderData(transactionsToRender) {
+            categoriesContainer.innerHTML = '';
+
+            let grandTotalMasuk = 0;
+            let grandTotalKeluar = 0;
+
+            const groupedByWangi = transactionsToRender.reduce((acc, item) => {
+                acc[item.wangi] = acc[item.wangi] || [];
+                acc[item.wangi].push(item);
+                return acc;
+            }, {});
+            
+            if (Object.keys(groupedByWangi).length === 0) {
+                 categoriesContainer.innerHTML = `<p class="text-gray-500 text-center p-8">Belum ada data transaksi.</p>`;
+            }
+
+            for (const wangi of Object.keys(groupedByWangi).sort()) {
+                const items = groupedByWangi[wangi];
+                items.sort((a, b) => new Date(b.createdAt?.toDate() || b.tanggal) - new Date(a.createdAt?.toDate() || a.tanggal));
+                
+                const masukItems = items.filter(item => item.masuk > 0);
+                const keluarItems = items.filter(item => item.keluar > 0);
+                const totalMasuk = masukItems.reduce((sum, item) => sum + item.masuk, 0);
+                const totalKeluar = keluarItems.reduce((sum, item) => sum + item.keluar, 0);
+                const stokSaatIni = totalMasuk - totalKeluar;
+
+                grandTotalMasuk += totalMasuk;
+                grandTotalKeluar += totalKeluar;
+
+                const categoryColor = stringToHslColor(wangi, 60, 40);
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'bg-gray-800 rounded-xl shadow-lg overflow-hidden border-2';
+                categoryDiv.style.borderColor = categoryColor;
+                
+                let masukCardsHTML = '';
+                if (masukItems.length > 0) {
+                    masukItems.forEach(item => {
+                        masukCardsHTML += createTransactionCard(item).outerHTML;
+                    });
+                } else {
+                    masukCardsHTML = `<div class="flex items-center justify-center h-full w-full text-gray-500 p-4">Belum ada riwayat stok masuk.</div>`;
+                }
+
+                let keluarCardsHTML = '';
+                if (keluarItems.length > 0) {
+                    keluarItems.forEach(item => {
+                        keluarCardsHTML += createTransactionCard(item).outerHTML;
+                    });
+                } else {
+                    keluarCardsHTML = `<div class="flex items-center justify-center h-full w-full text-gray-500 p-4">Belum ada riwayat penjualan.</div>`;
+                }
+                
+                categoryDiv.innerHTML = `
+                    <button class="accordion-header w-full flex justify-between items-center p-4 text-left" style="background: linear-gradient(to right, ${categoryColor}, #1f2937 80%);">
+                        <span class="text-xl font-bold">${wangi}</span>
+                        <div class="text-right">
+                            <span class="font-bold text-xl">${stokSaatIni} ml</span>
+                            <div class="text-xs text-gray-300">Stok Saat Ini</div>
+                        </div>
+                    </button>
+                    <div class="accordion-content open">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black bg-opacity-20">
+                            <!-- Kolom Kiri: Riwayat Masuk -->
+                            <div>
+                                <h4 class="font-semibold text-gray-300 mb-2 text-center text-green-400">Riwayat Masuk (${totalMasuk} ml)</h4>
+                                <div class="h-64 overflow-y-auto vertical-scrollbar space-y-3 p-2 bg-gray-900/50 rounded-lg">
+                                    ${masukCardsHTML}
+                                </div>
+                            </div>
+                            <!-- Kolom Kanan: Riwayat Keluar -->
+                             <div>
+                                <h4 class="font-semibold text-gray-300 mb-2 text-center text-red-400">Riwayat Keluar (${totalKeluar} ml)</h4>
+                                <div class="h-64 overflow-y-auto vertical-scrollbar space-y-3 p-2 bg-gray-900/50 rounded-lg">
+                                    ${keluarCardsHTML}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                categoriesContainer.appendChild(categoryDiv);
+            }
+
+            document.getElementById('total-masuk').textContent = `${grandTotalMasuk} ml`;
+            document.getElementById('total-keluar').textContent = `${grandTotalKeluar} ml`;
+            document.getElementById('stok-terkini').textContent = `${grandTotalMasuk - grandTotalKeluar} ml`;
+        }
+        
+        // --- Realtime Updates ---
+        async function loadPriceSettings() {
+            if (!userId) return;
+            const settingsRef = doc(db, `artifacts/${appId}/users/${userId}/settings/prices`);
+            const docSnap = await getDoc(settingsRef);
+            if (docSnap.exists()) {
+                priceSettings = docSnap.data();
+            }
+        }
+
+        async function setupRealtimeListener() {
+            if (!isAuthReady || !userId) return;
+            if (unsubscribeFromTransactions) unsubscribeFromTransactions();
+            const q = query(collection(db, `artifacts/${appId}/users/${userId}/perfumeTransactions`));
+            unsubscribeFromTransactions = onSnapshot(q, (snapshot) => {
+                allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderData(allTransactions); 
+            }, (error) => {
+                console.error("Listener error: ", error);
+                showNotification("Gagal mengambil data real-time.", true);
+            });
+        }
+
+        // --- Event Listeners ---
+        menuButton.addEventListener('click', () => dropdownMenu.classList.toggle('hidden'));
+        document.addEventListener('click', (e) => {
+            if (!menuButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        toggleSummaryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSummaryVisible = !isSummaryVisible;
+            stockSummarySection.classList.toggle('hidden');
+            e.target.textContent = isSummaryVisible ? 'Sembunyikan Ringkasan' : 'Tampilkan Ringkasan';
+            dropdownMenu.classList.add('hidden');
+        });
+
+        document.getElementById('open-settings-modal').addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdownMenu.classList.add('hidden');
+            requestProtectedAction(() => {
+                document.getElementById('harga-beli-30').value = priceSettings['30ml']?.hargaBeli || '';
+                document.getElementById('harga-jual-30').value = priceSettings['30ml']?.hargaJual || '';
+                document.getElementById('harga-beli-50').value = priceSettings['50ml']?.hargaBeli || '';
+                document.getElementById('harga-jual-50').value = priceSettings['50ml']?.hargaJual || '';
+                document.getElementById('harga-beli-100').value = priceSettings['100ml']?.hargaBeli || '';
+                document.getElementById('harga-jual-100').value = priceSettings['100ml']?.hargaJual || '';
+                document.getElementById('harga-beli-default').value = priceSettings.default?.hargaBeli || '';
+                document.getElementById('harga-jual-default').value = priceSettings.default?.hargaJual || '';
+                showModal(settingsModal);
+            });
+        });
+
+        document.getElementById('close-settings-modal').addEventListener('click', () => hideModal(settingsModal));
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPriceSettings = {
+                '30ml': {
+                    hargaBeli: parseInt(document.getElementById('harga-beli-30').value) || 0,
+                    hargaJual: parseInt(document.getElementById('harga-jual-30').value) || 0,
+                },
+                '50ml': {
+                    hargaBeli: parseInt(document.getElementById('harga-beli-50').value) || 0,
+                    hargaJual: parseInt(document.getElementById('harga-jual-50').value) || 0,
+                },
+                '100ml': {
+                    hargaBeli: parseInt(document.getElementById('harga-beli-100').value) || 0,
+                    hargaJual: parseInt(document.getElementById('harga-jual-100').value) || 0,
+                },
+                'default': {
+                    hargaBeli: parseInt(document.getElementById('harga-beli-default').value) || 0,
+                    hargaJual: parseInt(document.getElementById('harga-jual-default').value) || 0,
+                }
+            };
+            priceSettings = newPriceSettings;
+            const settingsRef = doc(db, `artifacts/${appId}/users/${userId}/settings/prices`);
+            await setDoc(settingsRef, priceSettings);
+            showNotification("Pengaturan harga disimpan!");
+            hideModal(settingsModal);
+        });
+
+        function calculateInitialCapital(transactions, prices) {
+            return transactions.reduce((totalCapital, tx) => {
+                if (tx.masuk <= 0) return totalCapital; 
+
+                const jumlahMasuk = tx.masuk;
+                let hargaBeli = prices.default?.hargaBeli || 0;
+
+                if (jumlahMasuk === 30 && prices['30ml']) {
+                    hargaBeli = prices['30ml'].hargaBeli || hargaBeli;
+                } else if (jumlahMasuk === 50 && prices['50ml']) {
+                    hargaBeli = prices['50ml'].hargaBeli || hargaBeli;
+                } else if (jumlahMasuk === 100 && prices['100ml']) {
+                    hargaBeli = prices['100ml'].hargaBeli || hargaBeli;
+                }
+                
+                const capitalPerTransaction = jumlahMasuk * hargaBeli;
+                return totalCapital + capitalPerTransaction;
+            }, 0);
+        }
+
+        function calculateProfit(sales) {
+            return sales.reduce((totalProfit, sale) => {
+                const jumlahKeluar = sale.keluar;
+                let hargaBeli = priceSettings.default?.hargaBeli || 0;
+                let hargaJual = priceSettings.default?.hargaJual || 0;
+
+                if (jumlahKeluar === 30 && priceSettings['30ml']) {
+                    hargaBeli = priceSettings['30ml'].hargaBeli || hargaBeli;
+                    hargaJual = priceSettings['30ml'].hargaJual || hargaJual;
+                } else if (jumlahKeluar === 50 && priceSettings['50ml']) {
+                    hargaBeli = priceSettings['50ml'].hargaBeli || hargaBeli;
+                    hargaJual = priceSettings['50ml'].hargaJual || hargaJual;
+                } else if (jumlahKeluar === 100 && priceSettings['100ml']) {
+                    hargaBeli = priceSettings['100ml'].hargaBeli || hargaBeli;
+                    hargaJual = priceSettings['100ml'].hargaJual || hargaJual;
+                }
+                
+                const profitPerSale = (hargaJual * jumlahKeluar) - (hargaBeli * jumlahKeluar);
+                return totalProfit + profitPerSale;
+            }, 0);
+        }
+
+        document.getElementById('open-report-modal').addEventListener('click', (e) => {
+            e.preventDefault();
+            const now = new Date();
+            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            const incomingTransactions = allTransactions.filter(tx => tx.masuk > 0);
+            const sales = allTransactions.filter(tx => tx.keluar > 0);
+            
+            const initialCapital = calculateInitialCapital(incomingTransactions, priceSettings);
+            document.getElementById('report-initial-capital').textContent = formatRupiah(initialCapital);
+
+            const weeklySales = sales.filter(s => new Date(s.tanggal) >= oneWeekAgo);
+            const monthlySales = sales.filter(s => new Date(s.tanggal) >= oneMonthAgo);
+
+            const weeklyProfit = calculateProfit(weeklySales);
+            const monthlyProfit = calculateProfit(monthlySales);
+            const totalProfit = calculateProfit(sales);
+            
+            document.getElementById('report-profit-weekly').textContent = formatRupiah(weeklyProfit);
+            document.getElementById('report-profit-monthly').textContent = formatRupiah(monthlyProfit);
+            document.getElementById('report-profit-total').textContent = formatRupiah(totalProfit);
+            
+            showModal(reportModal);
+            dropdownMenu.classList.add('hidden');
+        });
+        document.getElementById('close-report-modal').addEventListener('click', () => hideModal(reportModal));
+
+        // --- Import/Export ---
+        document.getElementById('export-excel-btn').addEventListener('click', () => {
+            const dataToExport = allTransactions;
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Transaksi Parfum");
+            XLSX.writeFile(wb, "riwayat_transaksi_parfum.xlsx");
+            dropdownMenu.classList.add('hidden');
+        });
+
+        document.getElementById('open-import-modal').addEventListener('click', (e) => {
+            e.preventDefault();
+            showModal(importModal);
+            dropdownMenu.classList.add('hidden');
+        });
+        document.getElementById('close-import-modal').addEventListener('click', () => hideModal(importModal));
+        
+        document.getElementById('download-template-btn').addEventListener('click', () => {
+            const templateData = "tanggal,wangi,masuk,keluar,namaPembeli\n2025-07-08,Baccarat,100,0,\n2025-07-08,Black Opium,0,30,John Doe";
+            const blob = new Blob([templateData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "template_impor.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        let fileToImport = null;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file && file.type === 'text/csv') {
+                fileToImport = file;
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('import-csv-btn').disabled = false;
+            } else {
+                showNotification("Hanya file .csv yang diperbolehkan.", true);
+                fileToImport = null;
+                document.getElementById('file-name').textContent = '';
+                document.getElementById('import-csv-btn').disabled = true;
+            }
+        }
+
+        document.getElementById('import-csv-btn').addEventListener('click', () => {
+            if (fileToImport && userId) {
+                Papa.parse(fileToImport, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async (results) => {
+                        const batch = writeBatch(db);
+                        results.data.forEach(row => {
+                            const newDocRef = doc(collection(db, `artifacts/${appId}/users/${userId}/perfumeTransactions`));
+                            const data = {
+                                tanggal: row.tanggal || '',
+                                wangi: row.wangi || '',
+                                masuk: parseInt(row.masuk) || 0,
+                                keluar: parseInt(row.keluar) || 0,
+                                namaPembeli: row.namaPembeli || '',
+                                createdAt: serverTimestamp()
+                            };
+                            batch.set(newDocRef, data);
+                        });
+                        try {
+                            await batch.commit();
+                            showNotification(`${results.data.length} data berhasil diimpor!`);
+                            hideModal(importModal);
+                        } catch (error) {
+                            showNotification("Gagal mengimpor data.", true);
+                            console.error("Import error:", error);
+                        }
+                    }
+                });
+            }
+        });
+
+        // --- Main Interaction Listeners (Edit, Delete, Accordion) ---
+        categoriesContainer.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+
+            // Accordion toggle
+            if (button.classList.contains('accordion-header')) {
+                button.nextElementSibling.classList.toggle('open');
+                return;
+            }
+            
+            const docId = button.dataset.id;
+
+            // Delete button logic
+            if (button.classList.contains('delete-btn')) {
+                requestProtectedAction(() => {
+                    docIdToDelete = docId;
+                    showModal(deleteConfirmModal);
+                });
+            } 
+            // Edit button logic
+            else if (button.classList.contains('edit-btn')) {
+                requestProtectedAction(() => {
+                    const tx = allTransactions.find(t => t.id === docId);
+                    if (tx) {
+                        document.getElementById('form-title').textContent = 'Edit Transaksi';
+                        document.getElementById('editing-id').value = tx.id;
+                        document.getElementById('tanggal').value = tx.tanggal;
+                        document.getElementById('wangi-parfum').value = tx.wangi;
+                        
+                        if (tx.masuk > 0) {
+                            document.querySelector('input[name="transaction_type"][value="masuk"]').checked = true;
+                            document.getElementById('jumlah').value = tx.masuk;
+                            document.getElementById('nama-pembeli-container').classList.add('hidden');
+                        } else {
+                            document.querySelector('input[name="transaction_type"][value="keluar"]').checked = true;
+                            document.getElementById('jumlah').value = tx.keluar;
+                            document.getElementById('nama-pembeli').value = tx.namaPembeli || '';
+                            document.getElementById('nama-pembeli-container').classList.remove('hidden');
+                        }
+                        
+                        document.getElementById('submit-btn').classList.remove('hidden'); 
+                        document.getElementById('cancel-edit-btn').classList.remove('hidden');
+                        
+                        if(formContentWrapper.classList.contains('hidden')) {
+                            formContentWrapper.classList.remove('hidden');
+                            formToggleIcon.classList.add('-rotate-180');
+                        }
+                        
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+            }
+        });
+
+        // --- Modal Button Listeners ---
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            if (docIdToDelete && userId) {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/perfumeTransactions`, docIdToDelete));
+                    showNotification("Data berhasil dihapus.");
+                } catch (error) {
+                    console.error("Error deleting document: ", error);
+                    showNotification("Gagal menghapus data.", true);
+                } finally {
+                    docIdToDelete = null; 
+                    hideModal(deleteConfirmModal);
+                }
+            }
+        });
+        document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+            docIdToDelete = null;
+            hideModal(deleteConfirmModal);
+        });
+        
+        toggleFormBtn.addEventListener('click', () => {
+            formContentWrapper.classList.toggle('hidden');
+            formToggleIcon.classList.toggle('-rotate-180');
+        });
+
+        // --- PIN Modal Listeners ---
+        pinLockButton.addEventListener('click', () => {
+            if (!isPinSet) {
+                 requestProtectedAction(() => {}); // This will trigger the PIN setup flow
+                 return;
+            }
+            if(isPinVerified) {
+                isPinVerified = false;
+                updateLockIcon();
+                showNotification("Sesi dikunci.", false);
+            } else {
+                requestProtectedAction(() => {}); // Ask for PIN to unlock
+            }
+        });
+        
+        pinForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            processPin(pinInputField.value);
+        });
+
+        document.getElementById('pin-cancel-button').addEventListener('click', () => {
+            hideModal(pinModal);
+            resetPinForm();
+        });
+
+    </script>
+</body>
+</html>
+
